@@ -153,8 +153,8 @@ if __name__ == "__main__":
     # Compute and print table sizes (disease)
     table_sizes_r3_disease = processor.get_table_sizes(hash_tables_r3_disease)
     table_sizes_r4_disease = processor.get_table_sizes(hash_tables_r4_disease)
-    table_sizes_r3_disease_sum = sum(table_sizes_r3_compound)
-    table_sizes_r4_disease_sum = sum(table_sizes_r4_compound)
+    table_sizes_r3_disease_sum = sum(table_sizes_r3_disease)
+    table_sizes_r4_disease_sum = sum(table_sizes_r4_disease)
 
     print("Table sizes for r=3 disease data:", sorted(table_sizes_r3_disease))
     print("Table sizes for r=4 disease data:", sorted(table_sizes_r4_disease))
