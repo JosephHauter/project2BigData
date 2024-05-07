@@ -101,12 +101,19 @@ if __name__ == "__main__":
     r_values_3 = [3, 3, 3, 3, 3]
     r_values_4 = [4, 4, 4, 4, 4]
     
-    hash_tables_r3 = processor.compute_hash_tables(compound_data, r_values_3)
-    hash_tables_r4 = processor.compute_hash_tables(disease_data, r_values_4)
+    hash_tables_r3_compound = processor.compute_hash_tables(compound_data, r_values_3)
+    hash_tables_r3_disease = processor.compute_hash_tables(compound_data, r_values_3)
+    hash_tables_r4_compound = processor.compute_hash_tables(compound_data, r_values_4)
+    hash_tables_r4_disease = processor.compute_hash_tables(disease_data, r_values_4)
 
-    # Compute and print table sizes
-    table_sizes = processor.get_table_sizes(hash_tables_r3)
-    print("Table sizes for r=3:", sorted(table_sizes))
+    # Compute and print table sizes (compound)
+    table_sizes_r3_compound = processor.get_table_sizes(hash_tables_r3_compound)
+    table_sizes_r4_compound = processor.get_table_sizes(hash_tables_r3_compound)
+    print("Table sizes for r=3 compound data:", sorted(table_sizes_r3_compound))
+    print("Table sizes for r=4 compound data:", sorted(table_sizes_r4_compound))
     
-    table_sizes = processor.get_table_sizes(hash_tables_r4)
-    print("Table sizes for r=4:", sorted(table_sizes))
+    # Compute and print table sizes (disease)
+    table_sizes_r3_disease = processor.get_table_sizes(hash_tables_r3_disease)
+    table_sizes_r4_disease = processor.get_table_sizes(hash_tables_r4_disease)
+    print("Table sizes for r=3 disease data:", sorted(table_sizes_r3_disease))
+    print("Table sizes for r=4 disease data:", sorted(table_sizes_r4_disease))
