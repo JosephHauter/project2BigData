@@ -8,33 +8,16 @@ class DataProcessor:
         self.edges = pd.read_csv(edges_file, sep='\t')
 
     def compound_gene_counts(self):
-        # Filter the edges DataFrame to select only the edges with metaedge 'CbG'
+        # Task 2: For each compound, compute the number of genes that are BIND (CbG) to it
         compound_gene_bind = self.edges[self.edges['metaedge'] == 'CbG']
+        compound_gene_counts = compound_gene_bind['source'].value_counts()
+        top_5_compound_gene_counts = compound_gene_counts.sort_values(ascending=False).head(5)
+        compound_data = [(compound, count) for compound, count in top_5_compound_gene_counts.items()]
+    
+        return compound_data
         
-        # Define a mapper function to extract gene names and count them
-        def mapper(compound_gene_pair):
-            compound, gene = compound_gene_pair
-            return [(compound, 1)]
 
-        # Define a reducer function to add the total counts for each genes
-        def reducer(counts, pair):
-            compound, count = pair
-            counts[compound] = counts.get(compound, 0) + count
-            return counts
-
-        # Map each compound-gene pair 
-        mapped_data = [mapper((row['source'], row['target'])) for _, row in compound_gene_bind.iterrows()]
-        mapped_data = reduce(lambda x, y: x + y, mapped_data)
-
-        # Reduce the mapped data by adding the counts for each gene
-        compound_gene_counts = reduce(reducer, mapped_data, {})
-
-        # Sort the genes based on their counts in descending order
-        sorted_compounds = sorted(compound_gene_counts.items(), key=lambda x: x[1], reverse=True)
-        
-        # Return the sorted list of compounds
-        return sorted_compounds
-
+    # Task 3: For each DISEASE, compute the number of GENE(s) that are UPREGULATES (DuG)
     def disease_gene_upregulate_counts(self):
         # Filter the edges DataFrame to select only the edges with metaedge 'DuG'
         disease_gene_upregulate = self.edges[self.edges['metaedge'] == 'DuG']
@@ -76,7 +59,7 @@ class DataProcessor:
     def compute_hash_tables(self, data, r_values):
         # Initialize a list of hash tables, one for each r value
         hash_tables = [[] for _ in range(len(r_values))]
-        
+
         # Iterate over each compound and its count in the data
         for compound, count in data:
             # Iterate over each r value and its index
@@ -86,6 +69,7 @@ class DataProcessor:
                 # Append the compound and its hash value to the appropriate hash table
                 # The hash table index is determined by the index of the r value in r_values
                 hash_tables[i % len(r_values)].append((hash_value, compound))
+
         # Return the list of hash tables
         return hash_tables
 
@@ -115,17 +99,16 @@ if __name__ == "__main__":
     processor = DataProcessor('nodes_test.tsv', 'edges_test.tsv')
 
     # Task 2: Compute compound gene counts
-    top_5_compounds = processor.compound_gene_counts()[:5]
-    print(top_5_compounds)
+    top_5_compounds = processor.compound_gene_counts()
     print("Top 5 compounds:")
-    for compound, count in top_5_compounds:
-        print(f"{compound}: {count} genes")
+    print(top_5_compounds)
+    
 
     # Task 3: Compute disease gene upregulate counts
     top_5_diseases = processor.disease_gene_upregulate_counts()[:5]
     print("Top 5 diseases:")
-    for gene, count in top_5_diseases:
-        print(f"{gene}: {count} diseases")
+    print(top_5_diseases)
+
 
     # Task 5: Compute hash tables with r=3 and r=4
     compound_data = processor.edges[processor.edges['metaedge'] == 'CbG']
@@ -153,8 +136,8 @@ if __name__ == "__main__":
     # Compute and print table sizes (disease)
     table_sizes_r3_disease = processor.get_table_sizes(hash_tables_r3_disease)
     table_sizes_r4_disease = processor.get_table_sizes(hash_tables_r4_disease)
-    table_sizes_r3_disease_sum = sum(table_sizes_r3_compound)
-    table_sizes_r4_disease_sum = sum(table_sizes_r4_compound)
+    table_sizes_r3_disease_sum = sum(table_sizes_r3_disease)
+    table_sizes_r4_disease_sum = sum(table_sizes_r4_disease)
 
     print("Table sizes for r=3 disease data:", sorted(table_sizes_r3_disease))
     print("Table sizes for r=4 disease data:", sorted(table_sizes_r4_disease))
