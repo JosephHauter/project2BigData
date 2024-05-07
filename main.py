@@ -61,11 +61,10 @@ class DataProcessor:
     def compute_hash_tables(self, data, r_values):
         hash_tables = [[] for _ in range(len(r_values))]
         
-        for _, row in data.iterrows():
-            key = row['source']
+        for compound, count in data:
             for i, r in enumerate(r_values):
-                hash_value = self.mid_square_hash(key, r=r)
-                hash_tables[i % len(r_values)].append((hash_value, key))
+                hash_value = self.mid_square_hash(compound, r=r)
+                hash_tables[i % len(r_values)].append((hash_value, compound))
         
         return hash_tables
 
@@ -85,6 +84,7 @@ if __name__ == "__main__":
 
     # Task 2: Compute compound gene counts
     top_5_compounds = processor.compound_gene_counts()[:5]
+    print(top_5_compounds)
     print("Top 5 compounds:")
     for compound, count in top_5_compounds:
         print(f"{compound}: {count} genes")
@@ -101,10 +101,10 @@ if __name__ == "__main__":
     r_values_3 = [3, 3, 3, 3, 3]
     r_values_4 = [4, 4, 4, 4, 4]
     
-    hash_tables_r3_compound = processor.compute_hash_tables(compound_data, r_values_3)
-    hash_tables_r3_disease = processor.compute_hash_tables(compound_data, r_values_3)
-    hash_tables_r4_compound = processor.compute_hash_tables(compound_data, r_values_4)
-    hash_tables_r4_disease = processor.compute_hash_tables(disease_data, r_values_4)
+    hash_tables_r3_compound = processor.compute_hash_tables(top_5_compounds, r_values_3)
+    hash_tables_r3_disease = processor.compute_hash_tables(top_5_diseases, r_values_3)
+    hash_tables_r4_compound = processor.compute_hash_tables(top_5_compounds, r_values_4)
+    hash_tables_r4_disease = processor.compute_hash_tables(top_5_diseases, r_values_4)
 
     # Compute and print table sizes (compound)
     table_sizes_r3_compound = processor.get_table_sizes(hash_tables_r3_compound)
