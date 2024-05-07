@@ -96,16 +96,17 @@ if __name__ == "__main__":
         print(f"{gene}: {count} diseases")
 
     # Task 5: Compute hash tables with r=3 and r=4
-    data = processor.edges[processor.edges['metaedge'] == 'CbG']
+    compound_data = processor.edges[processor.edges['metaedge'] == 'CbG']
+    disease_data = processor.edges[processor.edges['metaedge'] == 'DuG']
     r_values_3 = [3, 3, 3, 3, 3]
     r_values_4 = [4, 4, 4, 4, 4]
     
-    hash_tables_r3 = processor.compute_hash_tables(data, r_values_3)
-    hash_tables_r4 = processor.compute_hash_tables(data, r_values_4)
+    hash_tables_r3 = processor.compute_hash_tables(compound_data, r_values_3)
+    hash_tables_r4 = processor.compute_hash_tables(disease_data, r_values_4)
 
     # Compute and print table sizes
     table_sizes = processor.get_table_sizes(hash_tables_r3)
-    print("Table sizes for r=3:", table_sizes)
+    print("Table sizes for r=3:", sorted(table_sizes))
     
     table_sizes = processor.get_table_sizes(hash_tables_r4)
-    print("Table sizes for r=4:", table_sizes)
+    print("Table sizes for r=4:", sorted(table_sizes))
