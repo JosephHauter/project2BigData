@@ -1,56 +1,146 @@
 import pandas as pd
 import sys
+from functools import reduce
 
-# Task 1: Read in nodes.tsv and edges.tsv
-nodes = pd.read_csv('nodes_test.tsv', sep='\t')
-edges = pd.read_csv('edges_test.tsv', sep='\t')
+class DataProcessor:
+    def __init__(self, nodes_file, edges_file):
+        self.nodes = pd.read_csv(nodes_file, sep='\t')
+        self.edges = pd.read_csv(edges_file, sep='\t')
 
-# Task 2: For each compound, compute the number of genes that are BIND (CbG) to it
-compound_gene_bind = edges[edges['metaedge'] == 'CbG']
-compound_gene_counts = compound_gene_bind['source'].value_counts()
-top_5_compound_gene_counts = compound_gene_counts.sort_values(ascending=False).head(5)
-print(top_5_compound_gene_counts)
+    def compound_gene_counts(self):
+        # Task 2: For each compound, compute the number of genes that are BIND (CbG) to it
+        compound_gene_bind = self.edges[self.edges['metaedge'] == 'CbG']
+        compound_gene_counts = compound_gene_bind['source'].value_counts()
+        top_5_compound_gene_counts = compound_gene_counts.sort_values(ascending=False).head(5)
+        compound_data = [(compound, count) for compound, count in top_5_compound_gene_counts.items()]
+    
+        return compound_data
+        
 
-# Task 3: For each DISEASE, compute the number of GENE(s) that are UPREGULATES (DuG)
-disease_gene_upregulate = edges[edges['metaedge'] == 'DuG']
-disease_gene_counts = disease_gene_upregulate['source'].value_counts()
-top_5_disease_gene_counts = disease_gene_counts.sort_values(ascending=False).head(5)
-print(top_5_disease_gene_counts)
+    # Task 3: For each DISEASE, compute the number of GENE(s) that are UPREGULATES (DuG)
+    def disease_gene_upregulate_counts(self):
+        # Filter the edges DataFrame to select only the edges with metaedge 'DuG'
+        disease_gene_upregulate = self.edges[self.edges['metaedge'] == 'DuG']
 
-# Define the hash functions
-def mid_square_hash(key, r):
-    # Convert the string to an integer using ASCII values
-    key_int = sum(ord(c) for c in key)
-    # Square the key
-    square = key_int ** 2
-    # Convert to string for easy slicing
-    square_str = str(square)
-    # Get the middle r digits
-    hash_value = square_str[len(square_str)//2 - r//2 : len(square_str)//2 + r//2]
-    return int(hash_value)
+        # Define a mapper function to extract gene names and count them
+        def mapper(disease_gene_pair):
+            disease, gene = disease_gene_pair
+            return [(gene, 1)]
 
-def folding_hash(key, digit_size):
-    # Convert the string to an integer using ASCII values
-    key_int = sum(ord(c) for c in key)
-    # Convert to string for easy slicing
-    key_str = str(key_int)
-    # Divide into parts and sum
-    hash_value = sum(int(key_str[i:i+digit_size]) for i in range(0, len(key_str), digit_size))
-    return hash_value
+        # Define a reducer function to add the total counts for each genes
+        def reducer(counts, pair):
+            gene, count = pair
+            counts[gene] = counts.get(gene, 0) + count
+            return counts
+
+        # Map each disease-gene pair 
+        mapped_data = [mapper((row['source'], row['target'])) for _, row in disease_gene_upregulate.iterrows()]
+        # Reduce the mapped data by adding the counts for each gene
+        mapped_data = reduce(lambda x, y: x + y, mapped_data)
+        disease_gene_counts = reduce(reducer, mapped_data, {})
+        # Sort the genes based on their counts in descending order
+        sorted_genes = sorted(disease_gene_counts.items(), key=lambda x: x[1], reverse=True)
+
+        # Return the sorted list of genes
+        return sorted_genes
+
+    def mid_square_hash(self, key, r):
+        # Convert the characters of the key to their ASCII values and add them
+        key_int = sum(ord(c) for c in key)
+        # Square the key integer
+        square = key_int ** 2
+        # Convert the squared integer to a string
+        square_str = str(square)
+        # Extract a substring from the middle of the squared string, determined by r which represents the hash value
+        hash_value = square_str[len(square_str)//2 - r//2 : len(square_str)//2 + r//2]
+         # Convert the hash value back to an integer and return it
+        return int(hash_value)
+
+    def compute_hash_tables(self, data, r_values):
+        # Initialize a list of hash tables, one for each r value
+        hash_tables = [[] for _ in range(len(r_values))]
+
+        # Iterate over each compound and its count in the data
+        for compound, count in data:
+            # Iterate over each r value and its index
+            for i, r in enumerate(r_values):
+                # Compute the hash value for the compound using the mid-square method
+                hash_value = self.mid_square_hash(compound, r=r)
+                # Append the compound and its hash value to the appropriate hash table
+                # The hash table index is determined by the index of the r value in r_values
+                hash_tables[i % len(r_values)].append((hash_value, compound))
+
+        # Return the list of hash tables
+        return hash_tables
+
+    def get_table_sizes(self, hash_tables):
+        # Initialize a list to store the sizes of each hash table
+        table_sizes = []
+
+        # Iterate over each hash table in the list of hash tables
+        for table in hash_tables:
+            # Initialize the size of the current hash table with the size of the list structure itself
+            table_size = sys.getsizeof(table)
+            
+            table_sizes.append(table_size)
+        # Return the list of sizes for each hash table
+        return table_sizes
+    
+def compare_storage_sizes(total_size_r3, total_size_r4):
+    if total_size_r3 < total_size_r4:
+        return "Method r = 3 requires less storage."
+    elif total_size_r3 > total_size_r4:
+        return "Method r = 4 requires less storage."
+    else:
+        return "Both methods require the same amount of storage."
+
+if __name__ == "__main__":
+    #read in the data
+    processor = DataProcessor('nodes_test.tsv', 'edges_test.tsv')
+
+    # Task 2: Compute compound gene counts
+    top_5_compounds = processor.compound_gene_counts()
+    print("Top 5 compounds:")
+    print(top_5_compounds)
+    
+
+    # Task 3: Compute disease gene upregulate counts
+    top_5_diseases = processor.disease_gene_upregulate_counts()[:5]
+    print("Top 5 diseases:")
+    print(top_5_diseases)
 
 
-# Task 5: 
-# Compute the hash tables using mid-square method or Folding Method
-hash_tables = [{} for _ in range(10)]
-for _, row in edges.iterrows():
-    key = row['source']
-    for i in range(10):
-        if i < 5:
-            hash_value = mid_square_hash(key, r=3 if i < 2 else 4)
-        else:
-            hash_value = folding_hash(key, digit_size=2 if i < 7 else 3)
-        hash_tables[i][hash_value] = key
+    # Task 5: Compute hash tables with r=3 and r=4
+    compound_data = processor.edges[processor.edges['metaedge'] == 'CbG']
+    disease_data = processor.edges[processor.edges['metaedge'] == 'DuG']
+    r_values_3 = [3, 3, 3, 3, 3]
+    r_values_4 = [4, 4, 4, 4, 4]
+    
+    hash_tables_r3_compound = processor.compute_hash_tables(top_5_compounds, r_values_3)
+    hash_tables_r3_disease = processor.compute_hash_tables(top_5_diseases, r_values_3)
+    hash_tables_r4_compound = processor.compute_hash_tables(top_5_compounds, r_values_4)
+    hash_tables_r4_disease = processor.compute_hash_tables(top_5_diseases, r_values_4)
 
-# Compare the sizes of the tables
-for i, table in enumerate(hash_tables):
-    print(f"Size of table {i+1}: {sys.getsizeof(table)} bytes")
+    # Compute and print table sizes (compound)
+    table_sizes_r3_compound = processor.get_table_sizes(hash_tables_r3_compound)
+    table_sizes_r4_compound = processor.get_table_sizes(hash_tables_r4_compound)
+    table_sizes_r3_compound_sum = sum(table_sizes_r3_compound)
+    table_sizes_r4_compound_sum = sum(table_sizes_r4_compound)
+
+    print("Table sizes for r=3 compound data:", sorted(table_sizes_r3_compound))
+    print("Table sizes for r=4 compound data:", sorted(table_sizes_r4_compound))
+    print("Total size for r=3 compound data:", table_sizes_r3_compound_sum)
+    print("Total size for r=4 compound data:", table_sizes_r4_compound_sum)
+    print(compare_storage_sizes(table_sizes_r3_compound_sum, table_sizes_r4_compound_sum))
+    
+    # Compute and print table sizes (disease)
+    table_sizes_r3_disease = processor.get_table_sizes(hash_tables_r3_disease)
+    table_sizes_r4_disease = processor.get_table_sizes(hash_tables_r4_disease)
+    table_sizes_r3_disease_sum = sum(table_sizes_r3_disease)
+    table_sizes_r4_disease_sum = sum(table_sizes_r4_disease)
+
+    print("Table sizes for r=3 disease data:", sorted(table_sizes_r3_disease))
+    print("Table sizes for r=4 disease data:", sorted(table_sizes_r4_disease))
+    print("Total size for r=3 disease data:", table_sizes_r3_disease_sum)
+    print("Total size for r=4 disease data:", table_sizes_r4_disease_sum)
+    print(compare_storage_sizes(table_sizes_r3_disease_sum, table_sizes_r4_disease_sum))
